@@ -37,6 +37,34 @@ const homeworkContainer = document.querySelector('#homework-container');
  https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json
  */
 function loadTowns() {
+  return new Promise((resolve, reject) => {
+    const xrh = new XMLHttpRequest();
+    xrh.open('GET', 'https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json');
+    xrh.responseType = 'json';
+    xrh.send();
+    
+    xrh.addEventListener('load', () => {
+      if(xrh.status >= 400) {
+        reject();
+      } else {
+        const towns = xrh.response;
+        towns.sort((a,b) => {
+          if(a.name > b.name) {
+            return 1;
+          }
+
+          if(a.name < b.name) {
+            return -1;
+          }
+          
+          return 0;
+        });
+
+        resolve(towns);
+      }
+    });
+    
+  });
 }
 
 /*
@@ -51,7 +79,20 @@ function loadTowns() {
    isMatching('Moscow', 'Moscov') // false
  */
 function isMatching(full, chunk) {
+  const string = full.toLowerCase();
+  const subString = chunk.toLowerCase();
+
+  if(string.indexOf(subString) != -1) {
+    return true;
+  }
+
+  return false;
 }
+
+const repeat = document.createElement('button');
+repeat.textContent = 'повторить';
+homeworkContainer.appendChild(repeat);
+repeat.style.display = 'none';
 
 /* Блок с надписью "Загрузка" */
 const loadingBlock = homeworkContainer.querySelector('#loading-block');
@@ -62,9 +103,44 @@ const filterInput = homeworkContainer.querySelector('#filter-input');
 /* Блок с результатами поиска */
 const filterResult = homeworkContainer.querySelector('#filter-result');
 
-filterInput.addEventListener('keyup', function() {
-    // это обработчик нажатия кливиш в текстовом поле
+let cities = [];
+
+repeat.addEventListener('click', () => {
+  loadTowns();
 });
+
+loadTowns()
+  .then((result) => {
+    cities = result;
+    loadingBlock.style.display = 'none';
+    filterBlock.style.display = 'block';
+  })
+  .catch((e) => {
+    loadingBlock.style.display = 'none';
+    repeat.style.display = 'block';
+    alert('Не удалось загрузить города');
+  });
+  
+filterInput.addEventListener('keyup', function() {
+  const value = filterInput.value;
+
+  filterResult.innerHTML = '';
+
+  if(value) {
+    const filteredCities = cities.filter(city => isMatching(city.name, value));
+
+    filteredCities.forEach(city => {
+      const town = document.createElement('div');
+      town.textContent = city.name;
+      filterResult.appendChild(town);
+    });
+
+
+  } else {
+    filterResult.innerHTML = '';
+  }
+});
+
 
 export {
     loadTowns,
